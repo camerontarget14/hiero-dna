@@ -20,13 +20,13 @@ from hiero_dna.in_review import (
     set_in_review,
     suggest_session,
 )
-from hiero_dna.qt import QtCore, QtWidgets, exec_dialog
-from hiero_dna.signin_dialog import SignInDialog
+from hiero_dna.qt import HAS_WEBENGINE, QtCore, QtWidgets, exec_dialog
 from hiero_dna.version_id import extract_version_id, load_version_id_paths
 
 SETTINGS_ORG = "DNA"
 SETTINGS_APP = "hiero-dna"
 DEBUG_SETTING = "debug"
+API_URL_SETTING = "api_url"
 
 # DNA refusals that are expected in normal use and stay quiet outside debug
 # mode: 409 in-review pinned.
@@ -319,7 +319,7 @@ class DnaPlugin(QtCore.QObject):
         if not url:
             return
 
-        dialog = SignInDialog(url, _main_window(), title=title)
+        dialog = self._make_signin_dialog(url, title)
         result = exec_dialog(dialog)
         if result == QtWidgets.QDialog.Accepted and dialog.session:
             previous = self._session
@@ -337,8 +337,29 @@ class DnaPlugin(QtCore.QObject):
             if not signed_in.review_session:
                 self.choose_session(only_if_sessions=True)
             self._sync_current_clip()
-        elif result == SignInDialog.CHANGE_URL and self._prompt_for_url():
+        elif result == dialog.CHANGE_URL and self._prompt_for_url():
             self._run_desktop_flow(title=title)
+
+    def _make_signin_dialog(self, url, title):
+        if HAS_WEBENGINE:
+            from hiero_dna.signin_dialog import SignInDialog
+
+            return SignInDialog(url, _main_window(), title=title)
+        # No QtWebEngine (Nuke 17): native email sign-in.
+        from hiero_dna.native_signin_dialog import NativeSignInDialog
+
+        previous = self._session
+        dialog = NativeSignInDialog(
+            url,
+            _main_window(),
+            title=title,
+            api_url=_read_setting(API_URL_SETTING, "") or None,
+            email=previous.email if previous else None,
+        )
+        dialog.accepted.connect(
+            lambda: _write_setting(API_URL_SETTING, dialog.api_url)
+        )
+        return dialog
 
     def choose_session(self, only_if_sessions=False):
         """Pick the DNA session Hiero drives.

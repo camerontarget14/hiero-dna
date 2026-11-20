@@ -21,13 +21,21 @@ It adds a **DNA** menu to Hiero's menu bar:
 
 ## Requirements
 
-- Hiero / Nuke Studio 13+ (PySide2) or 16+ (PySide6), with QtWebEngine.
+- Hiero / Nuke Studio 13+ (PySide2) or 16+ (PySide6).
+- Nuke 17 ships without QtWebEngine. There, **Sign In...** opens a native
+  dialog instead of the DNA page: enter the DNA API URL (guessed as
+  `http://localhost:8000` for a local `:5173` web app) and your email, then
+  pick a show and playlist. This only works with DNA servers using email sign-in
+  (`VITE_AUTH_PROVIDER=none`); Google sign-in needs the web page.
 - A DNA build with sessions (`PUT /sessions/{id}/in-review`, `/desktop-signin`
   payload version 2).
 
 ## Install
 
-Add this repo's root to `HIERO_PLUGIN_PATH` and restart Hiero:
+Either drop a small bootstrap into `~/.nuke/Python/Startup/` that puts
+`<repo>/lib` on `sys.path` and calls `hiero_dna.plugin.install()`, or add this
+repo's root to `HIERO_PLUGIN_PATH` (only seen when Hiero starts from a shell
+that has it set) and restart Hiero:
 
 ```sh
 export HIERO_PLUGIN_PATH="/path/to/hiero-dna:$HIERO_PLUGIN_PATH"
@@ -70,6 +78,7 @@ python3 -m unittest discover -s tests -v
 | `Python/Startup/hiero_dna_startup.py` | Hiero startup hook. |
 | `lib/hiero_dna/plugin.py` | DNA menu, sign in, version sync (Hiero API). |
 | `lib/hiero_dna/signin_dialog.py` | Sign-in web view and injected bridge. |
-| `lib/hiero_dna/qt.py` | PySide6 / PySide2 compatibility. |
+| `lib/hiero_dna/qt.py` | PySide6 / PySide2 compatibility; QtWebEngine optional. |
+| `lib/hiero_dna/native_signin_dialog.py`, `directory.py` | Native email sign-in when QtWebEngine is missing. |
 | `lib/hiero_dna/fields.py` | Builds the bags the version-ID rules search. |
 | `lib/hiero_dna/auth.py`, `in_review.py`, `version_id.py` | Ported unchanged from rv-dna. No Hiero or Qt imports. |

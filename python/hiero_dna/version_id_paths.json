@@ -1,0 +1,23 @@
+[
+  {
+    "source": "property",
+    "name": "File",
+    "match": "/file_serve/version/(\\d+)/",
+    "as": "string"
+  },
+  {
+    "source": "metadata",
+    "name": "version_id",
+    "as": "int"
+  },
+  {
+    "source": "property",
+    "name": "version_id",
+    "as": "int"
+  },
+  {
+    "source": "metadata",
+    "name": "sg_version_id",
+    "as": "int"
+  }
+]

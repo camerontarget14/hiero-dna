@@ -1,5 +1,7 @@
 # hiero-dna
 
+https://github.com/user-attachments/assets/dcb1e68d-64e8-4a32-b53a-c119817d406a
+
 A Hiero / Nuke Studio plugin that connects Hiero to
 [DNA (Dailies Notes Assistant)](https://github.com/AcademySoftwareFoundation/dna).
 It signs in to DNA and sets the version in review as you move through a

@@ -1,5 +1,10 @@
 [
   {
+    "source": "metadata",
+    "name": "_sg_id",
+    "as": "int"
+  },
+  {
     "source": "property",
     "name": "File",
     "match": "/file_serve/version/(\\d+)/",

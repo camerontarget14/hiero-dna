@@ -52,11 +52,12 @@ event, backed by a 0.5 s poll), Hiero takes the top-most enabled track item
 at the playhead (or the clip, when a clip is open in the viewer) and extracts
 a version ID with `lib/hiero_dna/version_id_paths.json`:
 
-1. The media file path containing `/file_serve/version/<id>/`
-2. A `version_id` metadata value
-3. A `sg_version_id` metadata value
+1. A `_sg_id` tag note (set by the Nuke Timeline Loader)
+2. The media file path containing `/file_serve/version/<id>/`
+3. A `version_id` metadata value
+4. A `sg_version_id` metadata value
 
-Metadata is read from the track item's tags, the media source, the clip and
+Metadata is read from the track item's tags (their metadata, and name = note), the media source, the clip and
 the clip's tags. Tag keys like `tag.version_id` also match `version_id`.
 Point `HIERO_DNA_VERSION_ID_PATHS` at your own JSON to change the rules.
 

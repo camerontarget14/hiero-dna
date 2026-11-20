@@ -35,6 +35,11 @@ class BuildFieldsTest(unittest.TestCase):
         props, meta = build_fields(None, [("tag.sg_version_id", "9")])
         self.assertEqual(extract_version_id(props, meta), "9")
 
+    def test_timeline_loader_sg_id_tag(self):
+        # Nuke Timeline Loader: tag "_sg_id" whose note is the version id.
+        props, meta = build_fields("/local/shot_v003.mov", [("_sg_id", "6789")])
+        self.assertEqual(extract_version_id(props, meta), "6789")
+
 
 if __name__ == "__main__":
     unittest.main()

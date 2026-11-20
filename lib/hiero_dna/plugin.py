@@ -123,6 +123,14 @@ def _tag_items(obj):
     except Exception:
         tags = []
     for tag in tags:
+        # Tags carrying a value in their note, e.g. the Nuke Timeline
+        # Loader's "_sg_id" tag (note = ShotGrid version id).
+        try:
+            note = tag.note()
+            if note:
+                items.append((tag.name(), note))
+        except Exception:
+            pass
         try:
             items.extend(_data_items(tag.metadata()))
         except Exception:

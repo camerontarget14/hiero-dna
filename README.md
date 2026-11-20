@@ -2,8 +2,8 @@
 
 A Hiero / Nuke Studio plugin that connects Hiero to
 [DNA (Dailies Notes Assistant)](https://github.com/AcademySoftwareFoundation/dna).
-It is the Hiero counterpart of [rv-dna](https://github.com/camerontarget14/rv-dna)
-and shares its sign-in flow, API calls and version-ID rules.
+It signs in to DNA and sets the version in review as you move through a
+timeline in Hiero. For RV, see [rv-dna](https://github.com/camerontarget14/rv-dna).
 
 It adds a **DNA** menu to Hiero's menu bar:
 
@@ -58,8 +58,7 @@ export HIERO_PLUGIN_PATH="/path/to/hiero-dna:$HIERO_PLUGIN_PATH"
 
 Which sign-in window opens depends on the Hiero build:
 
-- **With QtWebEngine:** DNA's `/desktop-signin` page opens inside Hiero, as in
-  rv-dna.
+- **With QtWebEngine:** DNA's `/desktop-signin` page opens inside Hiero.
 - **Without QtWebEngine (Nuke 17):** a native dialog asks for the DNA API URL
   and your email, then lists your shows and playlists. The API URL is guessed
   as `http://localhost:8000` for a local web app on port 5173. This dialog only
@@ -83,9 +82,9 @@ clip's tags. A tag contributes its metadata, and its note under the tag's name.
 Tag metadata keys like `tag.version_id` also match `version_id`. Point
 `HIERO_DNA_VERSION_ID_PATHS` at your own JSON file to change the rules.
 
-Hiero has no Screening Room playlist context, so it uses the playlist from
-sign-in. With a DNA session chosen, it searches the session's playlists
-(the one already in review first) for the version.
+Hiero has no playlist of its own, so it uses the playlist from sign-in. With
+a DNA session chosen, it searches the session's playlists (the one already in
+review first) for the version.
 
 Hiero only sets a version that is on the playlist, and leaves in-review alone
 while it is pinned in DNA. Failures show once in the status bar.
@@ -118,7 +117,9 @@ python3 -m unittest discover -s tests -v
 | `lib/hiero_dna/qt.py` | PySide6 / PySide2 compatibility; QtWebEngine optional. |
 | `lib/hiero_dna/native_signin_dialog.py`, `directory.py` | Native email sign-in when QtWebEngine is missing. |
 | `lib/hiero_dna/fields.py` | Builds the bags the version-ID rules search. |
-| `lib/hiero_dna/auth.py`, `in_review.py`, `version_id.py` | Ported from rv-dna and kept close to it. No Hiero or Qt imports. |
+| `lib/hiero_dna/auth.py` | URL helpers, sign-in payload validation, saved sign-in. |
+| `lib/hiero_dna/in_review.py` | DNA API calls and choosing the playlist to set in review on. |
+| `lib/hiero_dna/version_id.py` | Version-ID extraction from the search rules. |
 | `lib/hiero_dna/version_id_paths.json` | Ordered search rules for version IDs. |
 
 ## License

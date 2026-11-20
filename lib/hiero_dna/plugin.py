@@ -378,14 +378,14 @@ class DnaPlugin(QtCore.QObject):
     # --- Sign in ------------------------------------------------------------
 
     def sign_in(self):
-        self._run_desktop_flow(title="Sign in to DNA")
+        self._run_signin_flow(title="Sign in to DNA")
 
     def switch_playlist(self):
         if not self._session:
             return
-        self._run_desktop_flow(title="Select DNA playlist")
+        self._run_signin_flow(title="Select DNA playlist")
 
-    def _run_desktop_flow(self, title):
+    def _run_signin_flow(self, title):
         url = self._store.url or self._prompt_for_url()
         if not url:
             return
@@ -409,7 +409,7 @@ class DnaPlugin(QtCore.QObject):
                 self.choose_session(only_if_sessions=True)
             self._sync_current_clip()
         elif result == dialog.CHANGE_URL and self._prompt_for_url():
-            self._run_desktop_flow(title=title)
+            self._run_signin_flow(title=title)
 
     def _make_signin_dialog(self, url, title):
         if HAS_WEBENGINE:
@@ -589,12 +589,11 @@ class DnaPlugin(QtCore.QObject):
         else:
             dna_session = None
 
-        # Hiero has no production-tracking playlist context: start from the
-        # sign-in playlist, and with a session search its playlists.
+        # Without a session the sign-in playlist is used; with one, its
+        # playlists are searched for the version.
         target = choose_playlist(
             version_id,
             session.playlist.id,
-            False,
             dna_session,
             lambda playlist_id: self._playlist_has_version(
                 session, playlist_id, version_id

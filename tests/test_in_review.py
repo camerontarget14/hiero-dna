@@ -19,7 +19,6 @@ from hiero_dna.in_review import (  # noqa: E402
     get_session,
     in_review_url,
     list_project_sessions,
-    parse_sg_context,
     set_in_review,
     suggest_session,
 )
@@ -71,29 +70,6 @@ def _session(session_id="s1", playlist_ids=("45", "46"), name="Monday", **kw):
     )
 
 
-class ParseSgContextTest(unittest.TestCase):
-    def test_parses_playlist(self):
-        context = parse_sg_context("771|Playlist|TEST_REVIEW_001|157|valid")
-        self.assertTrue(context.is_playlist)
-        self.assertEqual(context.entity_id, "771")
-        self.assertEqual(context.name, "TEST_REVIEW_001")
-        self.assertEqual(context.project_id, "157")
-
-    def test_name_may_contain_separator(self):
-        context = parse_sg_context("771|Playlist|A|B|157|valid")
-        self.assertEqual(context.name, "A|B")
-        self.assertEqual(context.project_id, "157")
-
-    def test_cleared_or_invalid_context_is_none(self):
-        self.assertIsNone(parse_sg_context("-1||||"))
-        self.assertIsNone(parse_sg_context("771|Playlist|X|157|invalid"))
-        self.assertIsNone(parse_sg_context(""))
-        self.assertIsNone(parse_sg_context("garbage"))
-
-    def test_other_entity_types_are_not_playlists(self):
-        self.assertFalse(parse_sg_context("12|Shot|TST_010|157|valid").is_playlist)
-
-
 class DnaSessionInfoTest(unittest.TestCase):
     def test_from_api_reads_mongo_id(self):
         info = DnaSessionInfo.from_api(
@@ -121,35 +97,25 @@ class ChoosePlaylistTest(unittest.TestCase):
         return lambda playlist_id: mapping.get(playlist_id, False)
 
     def test_no_session_uses_playlist_when_version_is_on_it(self):
-        target = choose_playlist("7", "45", True, None, self.has({"45": True}))
+        target = choose_playlist("7", "45", None, self.has({"45": True}))
         self.assertEqual(target.playlist_id, "45")
 
     def test_no_session_skips_version_not_on_playlist(self):
-        target = choose_playlist("7", "45", True, None, self.has({}))
+        target = choose_playlist("7", "45", None, self.has({}))
         self.assertIsNone(target.playlist_id)
         self.assertIn("not on playlist 45", target.skip_reason)
         self.assertFalse(target.notify)
 
-    def test_rv_playlist_must_be_in_session(self):
-        target = choose_playlist("7", "99", True, _session(), self.has({"99": True}))
-        self.assertIsNone(target.playlist_id)
-        self.assertIn("not in DNA session Monday", target.skip_reason)
-        self.assertTrue(target.notify)
-
-    def test_rv_playlist_in_session(self):
-        target = choose_playlist("7", "46", True, _session(), self.has({"46": True}))
-        self.assertEqual(target.playlist_id, "46")
-
-    def test_without_rv_playlist_searches_session(self):
+    def test_session_is_searched_for_the_version(self):
         target = choose_playlist(
-            "7", "45", False, _session(), self.has({"45": False, "46": True})
+            "7", "45", _session(), self.has({"45": False, "46": True})
         )
         self.assertEqual(target.playlist_id, "46")
 
     def test_search_prefers_playlist_already_in_review(self):
         session = _session(in_review_playlist_id="46")
         target = choose_playlist(
-            "7", "45", False, session, self.has({"45": True, "46": True})
+            "7", "45", session, self.has({"45": True, "46": True})
         )
         self.assertEqual(target.playlist_id, "46")
 
@@ -160,12 +126,12 @@ class ChoosePlaylistTest(unittest.TestCase):
             seen.append(playlist_id)
             return False
 
-        target = choose_playlist("7", "99", False, _session(), has)
+        target = choose_playlist("7", "99", _session(), has)
         self.assertIsNone(target.playlist_id)
         self.assertNotIn("99", seen)
 
     def test_lookup_failure_skips(self):
-        target = choose_playlist("7", "45", True, None, lambda _p: None)
+        target = choose_playlist("7", "45", None, lambda _p: None)
         self.assertIsNone(target.playlist_id)
         self.assertIn("could not read", target.skip_reason)
 

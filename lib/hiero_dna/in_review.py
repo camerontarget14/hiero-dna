@@ -6,7 +6,7 @@
 
 In-review lives on a DNA session: one or more playlists that share a
 transcript and an in-review version. Hiero sets it with
-``PUT /sessions/{session_id}/in-review`` on the playlist Hiero is on.
+``PUT /sessions/{session_id}/in-review`` on a playlist that holds the version.
 
 Pure Python with no Hiero or Qt imports so it can be unit tested outside Hiero.
 """
@@ -73,38 +73,6 @@ class DnaSessionInfo:
         )
 
 
-@dataclass(frozen=True)
-class SgContext:
-    """What Screening Room says the user is browsing."""
-
-    entity_id: str
-    entity_type: str
-    name: str
-    project_id: str
-
-    @property
-    def is_playlist(self) -> bool:
-        return self.entity_type == "Playlist"
-
-
-def parse_sg_context(contents: str) -> Optional[SgContext]:
-    """Parse Screening Room's ``sg-version-context-changed`` event contents.
-
-    The format is ``id|type|name|project_id|valid``; a cleared context is
-    ``-1||||``. Returns None for a cleared, invalid or malformed context.
-    """
-    parts = (contents or "").split("|")
-    if len(parts) < 5:
-        return None
-    # The name may itself contain "|": id and type lead, project and flag trail.
-    entity_id, entity_type = parts[0].strip(), parts[1].strip()
-    project_id, valid = parts[-2].strip(), parts[-1].strip()
-    name = "|".join(parts[2:-2])
-    if not entity_id.isdigit() or not entity_type or valid != "valid":
-        return None
-    return SgContext(entity_id, entity_type, name, project_id)
-
-
 # --- Targeting ---------------------------------------------------------------
 
 
@@ -122,16 +90,15 @@ class Target:
 def choose_playlist(
     version_id: str,
     playlist_id: Optional[str],
-    playlist_from_rv: bool,
     session: Optional[DnaSessionInfo],
     playlist_has_version: Callable[[str], Optional[bool]],
 ) -> Target:
     """Pick the playlist to set ``version_id`` in review on.
 
-    ``playlist_id`` is the playlist Hiero is on (``playlist_from_rv``) or the one
-    picked at sign-in. With a DNA ``session``, the playlist must belong to it;
-    when Hiero reports no playlist, the session's playlists are searched (the one
-    already in review first). Without a session, the playlist is used as is.
+    ``playlist_id`` is the playlist picked at sign-in. Without a DNA
+    ``session`` it is used as is. With one, the session's playlists are
+    searched for the version: the one already in review first, then the
+    sign-in playlist if it belongs to the session, then the rest.
     ``playlist_has_version`` returns None when the lookup failed.
     """
 
@@ -148,17 +115,7 @@ def choose_playlist(
             return Target(None, "no playlist to set in review on", notify=True)
         return check(playlist_id)
 
-    if playlist_from_rv and playlist_id:
-        if playlist_id not in session.playlist_ids:
-            return Target(
-                None,
-                f"playlist {playlist_id} is not in DNA session "
-                f"{session.display_name}",
-                notify=True,
-            )
-        return check(playlist_id)
-
-    # Hiero does not say which playlist it is on: find one in the session.
+    # Hiero has no playlist of its own: find one in the session.
     candidates = _unique(
         [session.in_review_playlist_id, playlist_id, *session.playlist_ids]
     )

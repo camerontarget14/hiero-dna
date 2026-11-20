@@ -9,7 +9,7 @@ import sys
 import unittest
 import urllib.error
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "python"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 
 from hiero_dna.in_review import (  # noqa: E402
     DnaSessionInfo,

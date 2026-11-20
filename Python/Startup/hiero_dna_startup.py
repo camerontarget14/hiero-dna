@@ -5,14 +5,14 @@
 """Hiero startup hook: adds the DNA menu.
 
 Hiero runs every module in <HIERO_PLUGIN_PATH entry>/Python/Startup at launch.
-The plugin code lives in <repo>/python so Hiero does not load it twice.
+The plugin code lives in <repo>/lib so Hiero does not load it twice.
 """
 
 import os
 import sys
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-_PYTHON = os.path.join(_ROOT, "python")
+_PYTHON = os.path.join(_ROOT, "lib")
 if _PYTHON not in sys.path:
     sys.path.insert(0, _PYTHON)
 

@@ -6,7 +6,7 @@ import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "python"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 
 from hiero_dna.fields import build_fields  # noqa: E402
 from hiero_dna.version_id import extract_version_id  # noqa: E402

@@ -33,7 +33,7 @@ Add this repo's root to `HIERO_PLUGIN_PATH` and restart Hiero:
 export HIERO_PLUGIN_PATH="/path/to/hiero-dna:$HIERO_PLUGIN_PATH"
 ```
 
-Hiero runs `Python/Startup/hiero_dna_startup.py`, which puts `python/` on
+Hiero runs `Python/Startup/hiero_dna_startup.py`, which puts `lib/` on
 `sys.path` and installs the menu. (Alternatively copy both folders into
 `~/.nuke/`.)
 
@@ -42,7 +42,7 @@ Hiero runs `Python/Startup/hiero_dna_startup.py`, which puts `python/` on
 When the clip under the playhead changes (Hiero's `kPlaybackClipChanged`
 event, backed by a 0.5 s poll), Hiero takes the top-most enabled track item
 at the playhead (or the clip, when a clip is open in the viewer) and extracts
-a version ID with `python/hiero_dna/version_id_paths.json`:
+a version ID with `lib/hiero_dna/version_id_paths.json`:
 
 1. The media file path containing `/file_serve/version/<id>/`
 2. A `version_id` metadata value
@@ -68,8 +68,8 @@ python3 -m unittest discover -s tests -v
 | File | Purpose |
 | --- | --- |
 | `Python/Startup/hiero_dna_startup.py` | Hiero startup hook. |
-| `python/hiero_dna/plugin.py` | DNA menu, sign in, version sync (Hiero API). |
-| `python/hiero_dna/signin_dialog.py` | Sign-in web view and injected bridge. |
-| `python/hiero_dna/qt.py` | PySide6 / PySide2 compatibility. |
-| `python/hiero_dna/fields.py` | Builds the bags the version-ID rules search. |
-| `python/hiero_dna/auth.py`, `in_review.py`, `version_id.py` | Ported unchanged from rv-dna. No Hiero or Qt imports. |
+| `lib/hiero_dna/plugin.py` | DNA menu, sign in, version sync (Hiero API). |
+| `lib/hiero_dna/signin_dialog.py` | Sign-in web view and injected bridge. |
+| `lib/hiero_dna/qt.py` | PySide6 / PySide2 compatibility. |
+| `lib/hiero_dna/fields.py` | Builds the bags the version-ID rules search. |
+| `lib/hiero_dna/auth.py`, `in_review.py`, `version_id.py` | Ported unchanged from rv-dna. No Hiero or Qt imports. |

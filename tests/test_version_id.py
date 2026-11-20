@@ -93,7 +93,8 @@ class LoadVersionIdPathsTest(unittest.TestCase):
     def test_loads_packaged_default(self):
         paths = load_version_id_paths()
         self.assertGreaterEqual(len(paths), 2)
-        self.assertEqual(paths[0]["name"], "File")
+        self.assertEqual(paths[0]["name"], "_sg_id")
+        self.assertEqual(paths[1]["name"], "File")
 
     def test_rejects_non_array(self):
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:

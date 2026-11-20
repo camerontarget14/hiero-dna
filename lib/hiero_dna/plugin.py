@@ -43,6 +43,9 @@ POLL_INTERVAL_MS = 500
 
 LOG_PREFIX = "hiero_dna:"
 
+# Never equal to a real key or to None, so the first check always reports.
+_UNSET = object()
+
 
 def _settings():
     return QtCore.QSettings(SETTINGS_ORG, SETTINGS_APP)
@@ -206,7 +209,7 @@ class DnaPlugin(QtCore.QObject):
         self._session = self._store.load_session()
         self._version_id_paths = load_version_id_paths()
         self._debug = self._load_debug()
-        self._last_clip_key = None
+        self._last_clip_key = _UNSET
         self._last_sent_version_id = None
         self._last_error = None
         self._playlist_versions = {}  # playlist id -> (fetched_at, frozenset)
@@ -302,7 +305,7 @@ class DnaPlugin(QtCore.QObject):
     def _refresh(self):
         self._session = self._store.load_session()
         self._debug = self._load_debug()
-        self._last_clip_key = None
+        self._last_clip_key = _UNSET
         self._last_sent_version_id = None
         self._last_error = None
         self._playlist_versions = {}
@@ -322,7 +325,7 @@ class DnaPlugin(QtCore.QObject):
         if self._debug:
             state = "polling" if self._poll_timer.isActive() else "not polling (sign in first)"
             self._debug_feedback(f"DNA debug: {self._status_line()}; {state}; {_viewer_state()}")
-            self._last_clip_key = None  # report the current clip right away
+            self._last_clip_key = _UNSET  # report the current clip right away
 
     # --- Feedback -----------------------------------------------------------
 
@@ -480,7 +483,7 @@ class DnaPlugin(QtCore.QObject):
         self._sync_current_clip()
 
     def force_sync(self):
-        self._last_clip_key = None
+        self._last_clip_key = _UNSET
         self._last_sent_version_id = None
         self._last_error = None
         self._sync_current_clip()

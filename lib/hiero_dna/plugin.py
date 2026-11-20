@@ -69,6 +69,25 @@ def _main_window():
 # --- What is on screen -------------------------------------------------------
 
 
+def _viewer_sequence(viewer):
+    """What the viewer plays: its player's sequence, or else the active one.
+
+    In Nuke Studio 17 ``player.sequence()`` can return None for a timeline
+    in the viewer; ``hiero.ui.activeSequence()`` still knows it.
+    """
+    try:
+        player = viewer.player()
+        sequence = player.sequence() if player else None
+    except Exception:
+        sequence = None
+    if sequence is None:
+        try:
+            sequence = hiero.ui.activeSequence()
+        except Exception:
+            sequence = None
+    return sequence
+
+
 def _current_clip():
     """The clip under the playhead in the current viewer, or None.
 
@@ -79,11 +98,10 @@ def _current_clip():
     if viewer is None:
         return None, None
     try:
-        player = viewer.player()
-        sequence = player.sequence() if player else None
         frame = viewer.time()
     except Exception:
         return None, None
+    sequence = _viewer_sequence(viewer)
     if sequence is None:
         return None, None
     if isinstance(sequence, hiero.core.Clip):
@@ -112,8 +130,7 @@ def _viewer_state():
     if viewer is None:
         return "no current viewer"
     try:
-        player = viewer.player()
-        sequence = player.sequence() if player else None
+        sequence = _viewer_sequence(viewer)
         name = sequence.name() if sequence is not None else None
         return f"viewer shows {name or 'nothing'} at frame {viewer.time()}"
     except Exception as e:

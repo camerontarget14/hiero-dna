@@ -21,7 +21,11 @@ from hiero_dna.in_review import (
     suggest_session,
 )
 from hiero_dna.qt import HAS_WEBENGINE, QtCore, QtWidgets, exec_dialog
-from hiero_dna.version_id import extract_version_id, load_version_id_paths
+from hiero_dna.version_id import (
+    PACKAGED_CONFIG_PATH,
+    extract_version_id,
+    load_version_id_paths,
+)
 
 SETTINGS_ORG = "DNA"
 SETTINGS_APP = "hiero-dna"
@@ -40,6 +44,10 @@ NO_SESSION_LABEL = "No session (each playlist's own)"
 # Hiero sends kPlaybackClipChanged when the clip under the playhead changes.
 # A light poll backs it up (scrubbing, switching viewers, loading a sequence).
 POLL_INTERVAL_MS = 500
+
+# Requests run on the UI thread. After a network error, wait this long before
+# trying again so an unreachable DNA does not stall Hiero on every clip.
+OFFLINE_BACKOFF_S = 30.0
 
 LOG_PREFIX = "hiero_dna:"
 
@@ -60,6 +68,15 @@ def _write_setting(name, value):
     settings = _settings()
     settings.setValue(name, value)
     settings.sync()
+
+
+def _load_version_id_paths():
+    """The version-ID rules; the packaged ones if a custom file is broken."""
+    try:
+        return load_version_id_paths()
+    except (OSError, ValueError) as e:
+        print(f"{LOG_PREFIX} could not read the version ID rules ({e}); using the defaults")
+        return load_version_id_paths(PACKAGED_CONFIG_PATH)
 
 
 def _main_window():
@@ -205,9 +222,9 @@ def _guid(obj):
     if obj is None:
         return None
     try:
-        return obj.guid() or id(obj)
+        return obj.guid() or obj.name()
     except Exception:
-        return id(obj)
+        return None
 
 
 def _clip_key(clip, track_item):
@@ -224,11 +241,12 @@ class DnaPlugin(QtCore.QObject):
         super().__init__(parent)
         self._store = SessionStore(_read_setting, _write_setting)
         self._session = self._store.load_session()
-        self._version_id_paths = load_version_id_paths()
+        self._version_id_paths = _load_version_id_paths()
         self._debug = self._load_debug()
         self._last_clip_key = _UNSET
         self._last_sent_version_id = None
         self._last_error = None
+        self._offline_until = 0.0
         self._playlist_versions = {}  # playlist id -> (fetched_at, frozenset)
         self._playlist_sessions = {}  # playlist id -> its own DNA session id
 
@@ -325,6 +343,7 @@ class DnaPlugin(QtCore.QObject):
         self._last_clip_key = _UNSET
         self._last_sent_version_id = None
         self._last_error = None
+        self._offline_until = 0.0
         self._playlist_versions = {}
         self._playlist_sessions = {}
         self._update_polling()
@@ -503,12 +522,13 @@ class DnaPlugin(QtCore.QObject):
         self._last_clip_key = _UNSET
         self._last_sent_version_id = None
         self._last_error = None
+        self._offline_until = 0.0
         self._sync_current_clip()
 
     def _sync_current_clip(self):
         """Push the on-screen version to DNA if the clip changed."""
         session = self._session
-        if not session:
+        if not session or time.monotonic() < self._offline_until:
             return
         try:
             clip, track_item = _current_clip()
@@ -649,12 +669,16 @@ class DnaPlugin(QtCore.QObject):
 
     def _report_failure(self, result):
         """Tell the user a DNA request failed, once per distinct failure."""
+        if result.status is None:
+            self._offline_until = time.monotonic() + OFFLINE_BACKOFF_S
+            # Look at the current clip again once the back-off is over.
+            self._last_clip_key = _UNSET
         if self._debug or result.status in EXPECTED_REFUSALS:
             return
         if result.status is None:
             message = "DNA unreachable: in review is not syncing"
         elif result.status == 401:
-            message = "DNA sign-in expired. Choose DNA > Sign In..."
+            message = "DNA sign-in expired. Sign out and sign in again from the DNA menu"
         else:
             message = f"DNA rejected the in-review update ({result.status})"
         self._notify_once(message)

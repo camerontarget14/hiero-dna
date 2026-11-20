@@ -90,6 +90,17 @@ class ExtractVersionIdTest(unittest.TestCase):
 
 
 class LoadVersionIdPathsTest(unittest.TestCase):
+    def test_env_var_overrides_packaged_path(self):
+        from unittest import mock
+
+        from hiero_dna import version_id
+
+        self.assertEqual(
+            version_id.default_version_id_config_path(), version_id.PACKAGED_CONFIG_PATH
+        )
+        with mock.patch.dict(os.environ, {"HIERO_DNA_VERSION_ID_PATHS": "/x/rules.json"}):
+            self.assertEqual(version_id.default_version_id_config_path(), "/x/rules.json")
+
     def test_loads_packaged_default(self):
         paths = load_version_id_paths()
         self.assertGreaterEqual(len(paths), 2)

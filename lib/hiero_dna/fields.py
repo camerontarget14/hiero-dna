@@ -36,6 +36,6 @@ def build_fields(
             names.append(key[len(TAG_PREFIX):])
         for name in names:
             metadata.setdefault(name, value)
-            # The RV package also looks for version ids in properties.
+            # Search steps may name either source, as in rv-dna.
             properties.setdefault(name, value)
     return properties, metadata

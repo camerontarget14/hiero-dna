@@ -4,7 +4,8 @@
 #
 """Hiero startup hook: adds the DNA menu.
 
-Hiero runs every module in <HIERO_PLUGIN_PATH entry>/Python/Startup at launch.
+Hiero runs every module in <HIERO_PLUGIN_PATH entry>/Python/StartupUI when
+its interface starts.
 The plugin code lives in <repo>/lib so Hiero does not load it twice.
 """
 

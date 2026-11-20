@@ -14,15 +14,17 @@ import os
 import re
 from typing import Any, Mapping, Optional, Sequence
 
+PACKAGED_CONFIG_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "version_id_paths.json"
+)
+
+
 def default_version_id_config_path() -> str:
     """Return the search-path config location.
 
     ``HIERO_DNA_VERSION_ID_PATHS`` overrides the JSON shipped next to this module.
     """
-    override = os.environ.get("HIERO_DNA_VERSION_ID_PATHS")
-    if override:
-        return override
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "version_id_paths.json")
+    return os.environ.get("HIERO_DNA_VERSION_ID_PATHS") or PACKAGED_CONFIG_PATH
 
 
 DEFAULT_CONFIG_PATH = default_version_id_config_path()

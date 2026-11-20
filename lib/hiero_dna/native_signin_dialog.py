@@ -37,7 +37,11 @@ class NativeSignInDialog(QtWidgets.QDialog):
         self._email.setPlaceholderText("you@studio.com")
         load = QtWidgets.QPushButton("Load shows")
         load.clicked.connect(self._load_projects)
+        load.setAutoDefault(False)
         self._email.returnPressed.connect(self._load_projects)
+        # The lists belong to the email and API URL they were loaded with.
+        self._email.textEdited.connect(self._invalidate)
+        self._api.textEdited.connect(self._invalidate)
 
         self._project = QtWidgets.QComboBox()
         self._project.currentIndexChanged.connect(self._load_playlists)
@@ -77,6 +81,15 @@ class NativeSignInDialog(QtWidgets.QDialog):
     def email(self):
         return self._email.text().strip()
 
+    def _invalidate(self, *_):
+        self._projects = []
+        self._playlists = []
+        self._project.blockSignals(True)
+        self._project.clear()
+        self._project.blockSignals(False)
+        self._playlist.clear()
+        self._ok.setEnabled(False)
+
     def _fail(self, what, result):
         status = result.status if result.status is not None else "network error"
         detail = (result.response_body or "").strip().replace("\n", " ")[:200]
@@ -89,11 +102,7 @@ class NativeSignInDialog(QtWidgets.QDialog):
         self._status.setText("Loading shows...")
         QtWidgets.QApplication.processEvents()
         projects, result = list_user_projects(self.api_url, self.email)
-        self._project.blockSignals(True)
-        self._project.clear()
-        self._project.blockSignals(False)
-        self._playlist.clear()
-        self._ok.setEnabled(False)
+        self._invalidate()
         if projects is None:
             self._fail("shows", result)
             return
@@ -110,6 +119,7 @@ class NativeSignInDialog(QtWidgets.QDialog):
         index = self._project.currentIndex()
         self._playlist.clear()
         self._ok.setEnabled(False)
+        self._playlists = []
         if index < 0 or index >= len(self._projects):
             return
         project = self._projects[index]
@@ -128,7 +138,7 @@ class NativeSignInDialog(QtWidgets.QDialog):
 
     def _finish(self):
         pi, li = self._project.currentIndex(), self._playlist.currentIndex()
-        if pi < 0 or li < 0:
+        if not (0 <= pi < len(self._projects) and 0 <= li < len(self._playlists)):
             return
         payload = build_payload_json(
             self.email, self.api_url, self._projects[pi], self._playlists[li]

@@ -103,6 +103,20 @@ def _current_clip():
     return None, None
 
 
+def _viewer_state():
+    """Short description of the current viewer, for debug messages."""
+    viewer = hiero.ui.currentViewer()
+    if viewer is None:
+        return "no current viewer"
+    try:
+        player = viewer.player()
+        sequence = player.sequence() if player else None
+        name = sequence.name() if sequence is not None else None
+        return f"viewer shows {name or 'nothing'} at frame {viewer.time()}"
+    except Exception as e:
+        return f"could not read the viewer: {e}"
+
+
 def _data_items(collection):
     """(key, value) pairs from a Hiero DataCollection or dict."""
     if collection is None:
@@ -167,13 +181,19 @@ def gather_clip_fields(clip, track_item=None):
     return build_fields(file_path, items)
 
 
-def _clip_key(clip, track_item):
-    obj = track_item if track_item is not None else clip
+def _guid(obj):
+    if obj is None:
+        return None
     try:
-        guid = obj.guid()
+        return obj.guid() or id(obj)
     except Exception:
-        guid = None
-    return guid or id(obj)
+        return id(obj)
+
+
+def _clip_key(clip, track_item):
+    """Changes when the playhead moves to another item, or when the item is
+    switched to another version (same track item, new source clip)."""
+    return (_guid(track_item), _guid(clip))
 
 
 # --- Plugin ------------------------------------------------------------------
@@ -299,6 +319,10 @@ class DnaPlugin(QtCore.QObject):
         self._debug = not self._debug
         _write_setting(DEBUG_SETTING, "true" if self._debug else "false")
         self._feedback(f"DNA debug mode {'on' if self._debug else 'off'}", 2.0)
+        if self._debug:
+            state = "polling" if self._poll_timer.isActive() else "not polling (sign in first)"
+            self._debug_feedback(f"DNA debug: {self._status_line()}; {state}; {_viewer_state()}")
+            self._last_clip_key = None  # report the current clip right away
 
     # --- Feedback -----------------------------------------------------------
 
@@ -472,12 +496,19 @@ class DnaPlugin(QtCore.QObject):
             if self._debug:
                 self._debug_feedback(f"DNA debug: could not read the viewer: {e}")
             return
-        if clip is None:
-            return
-        key = _clip_key(clip, track_item)
+        key = _clip_key(clip, track_item) if clip is not None else None
         if key == self._last_clip_key:
             return
         self._last_clip_key = key
+        if clip is None:
+            if self._debug:
+                self._debug_feedback(f"DNA debug: no clip under the playhead ({_viewer_state()})")
+            return
+        if self._debug:
+            self._debug_feedback(
+                f"DNA debug: now viewing {clip.name()}"
+                + (f" (track item {track_item.name()})" if track_item is not None else "")
+            )
         self._push_clip(session, clip, track_item)
 
     def _push_clip(self, session, clip, track_item):
@@ -629,6 +660,7 @@ def install():
     global _plugin
     if _plugin is None:
         _plugin = DnaPlugin(_main_window())
+        print(f"{LOG_PREFIX} DNA menu loaded ({_plugin._status_line()})", flush=True)
     return _plugin
 
 
